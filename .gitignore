@@ -1,0 +1,17 @@
+# Environnement virtuel
+venv/
+
+# Secrets
+.env
+*.pem
+gcp-keys/
+
+# Données brutes extraites
+air_quality_seoul_*.json
+
+# Fichiers générés par Python
+__pycache__/
+*.pyc
+
+# Fichiers système macOS
+.DS_Store
