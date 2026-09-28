@@ -33,3 +33,5 @@ models:
   dbt_seoul_air:
     staging:
       +materialized: view
+    marts:
+      +materialized: table

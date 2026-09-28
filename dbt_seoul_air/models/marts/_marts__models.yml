@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: dim_stations
+    description: "One row per OpenAQ station, with its latest known name and coordinates."
+    columns:
+      - name: station_id
+        data_tests:
+          - unique
+          - not_null
