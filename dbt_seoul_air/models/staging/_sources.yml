@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+    - name: openaq
+      database: seoul-air-quality
+      schema: seoul_air_quality_raw
+      tables:
+        - name: air_quality_measurements
+
+
+
+
+    

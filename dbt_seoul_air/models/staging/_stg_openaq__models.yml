@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: stg_openaq__measurements
+    description: "Latest OpenAQ measurement per sensor for each extraction, one row per pollutant and station."
+    columns:
+      - name: station_id
+        data_tests:
+          - not_null
+      - name: pollutant
+        data_tests:
+          - not_null
+      - name: measurement_value
+        data_tests:
+          - not_null
+      - name: measurement_at
+        data_tests:
+          - not_null
+      - name: extraction_id
+        data_tests:
+          - not_null
