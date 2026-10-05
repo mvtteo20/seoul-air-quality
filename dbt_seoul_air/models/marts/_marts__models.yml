@@ -8,3 +8,17 @@ models:
         data_tests:
           - unique
           - not_null
+  - name: fct_measurements
+    description: "One row per distinct measurement of a station, pollutant and unit, deduplicated across extractions."
+    columns:
+      - name: measurement_key
+        data_tests:
+          - unique
+          - not_null
+      - name: station_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_stations')
+                field: station_id       
