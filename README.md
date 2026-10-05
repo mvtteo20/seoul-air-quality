@@ -35,6 +35,12 @@ OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) →
 - Only the six standard pollutants are kept in the fact table (CO, NO2, O3, SO2, PM10, PM2.5). Isolated sensors such as temperature or humidity are excluded.
 - Fill values are excluded. Sensors can report 9999 when they have no valid measurement. Values of 9999 or more and negative values are filtered out of the fact table, and a dbt test fails if one gets through.
 
+## Known limitations
+
+- Freshness is checked per station, not per sensor. A station passes the 24-hour filter as long as one of its sensors has reported recently, so other sensors of the same station can be stale. In the first two extractions, about 0.2 % of measurements were affected (2 out of 1074, from two different stations).
+- Only the latest value of each sensor is collected. The pipeline stores a snapshot at each run, not the full measurement history.
+- Fill values are filtered with a fixed threshold. Several sensors regularly report 9999 when they have no valid measurement. Values of 9999 or more and negative values are dropped, but the pipeline does not yet apply plausible upper bounds per pollutant.
+
 ## Setup
 
 ```
