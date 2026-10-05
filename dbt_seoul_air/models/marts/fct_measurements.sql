@@ -12,6 +12,8 @@ with ranked as (
         ) as row_num
     from {{ ref('stg_openaq__measurements') }}
     where pollutant_code in ('co', 'no2', 'o3', 'so2', 'pm10', 'pm25')
+        and measurement_value >= 0
+        and measurement_value < 9999
 )
 
 select

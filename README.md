@@ -33,6 +33,7 @@ OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) →
 - Stations are identified by `station_id`, never by name. Two distinct stations can share the same name.
 - Consecutive extractions can return the same measurement when a station has not published anything new, so the fact table keeps one row per station, pollutant, unit and timestamp.
 - Only the six standard pollutants are kept in the fact table (CO, NO2, O3, SO2, PM10, PM2.5). Isolated sensors such as temperature or humidity are excluded.
+- Fill values are excluded. Sensors can report 9999 when they have no valid measurement. Values of 9999 or more and negative values are filtered out of the fact table, and a dbt test fails if one gets through.
 
 ## Setup
 
@@ -46,6 +47,8 @@ cp .env.example .env
 ```
 
 Fill in '.env' with your own OpenAQ API key and the path to your GCP service account key.
+
+dbt reads its connection settings from `~/.dbt/profiles.yml`, outside the repository. Create it with `dbt init` or copy the structure from the dbt documentation for BigQuery. Then run `dbt build` from the `dbt_seoul_air` folder.
 
 You also need a GCP project with a BigQuery dataset named 'seoul_air_quality_raw'.
 
