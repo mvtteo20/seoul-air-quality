@@ -87,7 +87,7 @@ print(len(records))
 # Saving the records to a JSON file with a timestamped filename
 
 
-timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")
 filename = f"air_quality_seoul_{timestamp}.json"
 
 with open(filename, "w", encoding="utf-8") as f:

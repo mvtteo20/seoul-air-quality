@@ -1,0 +1,11 @@
+dbt_seoul_air:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: seoul-air-quality
+      dataset: seoul_air_quality_dbt
+      threads: 4
+      location: US
+      keyfile: "{{ env_var('GCP_KEY_PATH') }}"
