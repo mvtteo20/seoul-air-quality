@@ -4,14 +4,14 @@ A personal data engineering project that collects air quality measurements aroun
 
 ## Architecture
 
-OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) → dbt (planned) → Airflow (planned) → dashboard (planned)
+OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) → dbt (staging → marts) → orchestrated by Airflow (Docker) → dashboard (planned)
 
 ## Current status
 
 - [x] Extraction from the OpenAQ API
 - [x] Idempotent load into BigQuery
 - [x] Transformation with dbt
-- [ ] Orchestration with Airflow
+- [x] Orchestration with Airflow
 - [ ] Dashboard
 - [ ] Tests and CI
 
@@ -22,6 +22,17 @@ OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) →
 | `stg_openaq__measurements` | view | Raw table with clean column names, typed timestamps and a normalized `pollutant_code` |
 | `dim_stations` | table | One row per station, with its latest known name and coordinates |
 | `fct_measurements` | table | One row per distinct measurement, deduplicated across extractions |
+
+## Running with Airflow (local)
+
+Airflow runs in Docker Compose with a custom image (see `airflow/Dockerfile`) that adds the Python dependencies and installs dbt in its own virtual environment, to avoid dependency conflicts with Airflow.
+
+1. Create `airflow/.env` with `AIRFLOW_UID`, `FERNET_KEY`, `OPENAQ_API_KEY` and `GCP_KEY_HOST_PATH` (the path to your GCP service account key on your machine).
+2. Create a `data/` folder at the root of the repository.
+3. From the `airflow/` folder, run `docker compose up airflow-init`, then `docker compose up -d`.
+4. Open http://localhost:8080 and trigger the `seoul_air_pipeline` DAG.
+
+The Docker Compose file comes from the official Airflow quick start, adapted for local development. It is not meant for production.
 
 ## Design decisions
 
@@ -34,6 +45,8 @@ OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) →
 - Consecutive extractions can return the same measurement when a station has not published anything new, so the fact table keeps one row per station, pollutant, unit and timestamp.
 - Only the six standard pollutants are kept in the fact table (CO, NO2, O3, SO2, PM10, PM2.5). Isolated sensors such as temperature or humidity are excluded.
 - Fill values are excluded. Sensors can report 9999 when they have no valid measurement. Values of 9999 or more and negative values are filtered out of the fact table, and a dbt test fails if one gets through.
+- dbt runs in its own virtual environment inside the Airflow image, because installing dbt next to Airflow can cause dependency conflicts.
+- Secrets are injected at runtime, through an untracked `.env` file and mounted volumes, and never written in the repository.
 
 ## Known limitations
 
