@@ -53,6 +53,8 @@ The Docker Compose file comes from the official Airflow quick start, adapted for
 - Freshness is checked per station, not per sensor. A station passes the 24-hour filter as long as one of its sensors has reported recently, so other sensors of the same station can be stale. In the first two extractions, about 0.2 % of measurements were affected (2 out of 1074, from two different stations).
 - Only the latest value of each sensor is collected. The pipeline stores a snapshot at each run, not the full measurement history.
 - Fill values are filtered with a fixed threshold. Several sensors regularly report 9999 when they have no valid measurement. Values of 9999 or more and negative values are dropped, but the pipeline does not yet apply plausible upper bounds per pollutant.
+- The pipeline runs locally. Scheduled runs only happen while Docker is running and the machine is awake. A run missed while Airflow is stopped is skipped.
+
 
 ## Setup
 
