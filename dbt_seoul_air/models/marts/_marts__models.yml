@@ -21,4 +21,16 @@ models:
           - relationships:
               arguments:
                 to: ref('dim_stations')
-                field: station_id       
+                field: station_id     
+  - name: rpt_latest_measurements
+    description: "Latest measurement per station and pollutant, with coordinates, built for the dashboard."
+    columns:
+      - name: station_id
+        data_tests:
+          - not_null
+      - name: pollutant_code
+        data_tests:
+          - not_null
+      - name: location
+        data_tests:
+          - not_null  
