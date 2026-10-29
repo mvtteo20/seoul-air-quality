@@ -1,13 +1,21 @@
+import datetime
+
 import pendulum
 
 from airflow.sdk import DAG
 from airflow.providers.standard.operators.bash import BashOperator
+from airflow.timetables.trigger import CronTriggerTimetable
 
 with DAG(
     dag_id="seoul_air_pipeline",
-    schedule=None,
-    start_date=pendulum.datetime(2026, 10, 1, tz="UTC"),
+    schedule=CronTriggerTimetable("0 9 * * *", timezone="Asia/Seoul"),
+    start_date=pendulum.datetime(2026, 10, 1, tz="Asia/Seoul"),
     catchup=False,
+    max_active_runs=1,
+    default_args={
+        "retries": 1,
+        "retry_delay": datetime.timedelta(minutes=5),
+    },
     tags=["seoul-air-quality"],
 ) as dag:
     extract = BashOperator(
