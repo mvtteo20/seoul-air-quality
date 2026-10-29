@@ -22,6 +22,7 @@ OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) →
 | `stg_openaq__measurements` | view | Raw table with clean column names, typed timestamps and a normalized `pollutant_code` |
 | `dim_stations` | table | One row per station, with its latest known name and coordinates |
 | `fct_measurements` | table | One row per distinct measurement, deduplicated across extractions |
+| `rpt_latest_measurements` | table | Latest measurement per station and pollutant, with coordinates and an `is_recent` flag, built for the dashboard |
 
 ## Running with Airflow (local)
 
@@ -50,7 +51,8 @@ The Docker Compose file comes from the official Airflow quick start, adapted for
 
 ## Known limitations
 
-- Freshness is checked per station, not per sensor. A station passes the 24-hour filter as long as one of its sensors has reported recently, so other sensors of the same station can be stale. In the first two extractions, about 0.2 % of measurements were affected (2 out of 1074, from two different stations).
+- Freshness is checked per station, not per sensor. A station passes the 24-hour filter as long as one of its sensors has reported recently. In a snapshot of the latest values taken on 2026-10-29, 20 of 550 (about 4 %) came from 4 stations: two had no recent value for any pollutant, two still had a recent PM2.5 value. These values are flagged `is_recent = false` and excluded from the dashboard.
+- "Recent" is relative to the newest measurement in the table, not to the current time. If the pipeline stops running, older data is not flagged as outdated, so the dashboard displays the date of its latest measurement.cently, so other sensors of the same station can be stale. In the first two extractions, about 0.2 % of measurements were affected (2 out of 1074, from two different stations).
 - Only the latest value of each sensor is collected. The pipeline stores a snapshot at each run, not the full measurement history.
 - Fill values are filtered with a fixed threshold. Several sensors regularly report 9999 when they have no valid measurement. Values of 9999 or more and negative values are dropped, but the pipeline does not yet apply plausible upper bounds per pollutant.
 - The pipeline runs locally. Scheduled runs only happen while Docker is running and the machine is awake. A run missed while Airflow is stopped is skipped.
