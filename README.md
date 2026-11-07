@@ -4,7 +4,7 @@ A personal data engineering project that collects air quality measurements aroun
 
 ## Architecture
 
-OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) → dbt (staging → marts) → orchestrated by Airflow (Docker) → dashboard (planned)
+OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) → dbt (staging → marts) → orchestrated by Airflow (Docker) → Data Studio Dashboard 
 
 ## Current status
 
@@ -12,8 +12,14 @@ OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) →
 - [x] Idempotent load into BigQuery
 - [x] Transformation with dbt
 - [x] Orchestration with Airflow
-- [ ] Dashboard
+- [x] Dashboard
 - [ ] Tests and CI
+
+## Dashboard
+
+![Seoul air quality dashboard](docs/dashboard.png)
+
+[Open the live dashboard](https://datastudio.google.com/s/j76ONKsorXs) (view only). It shows the latest measurement of each station for the selected pollutant. Stations that stopped reporting are hidden.
 
 ## Data model
 
