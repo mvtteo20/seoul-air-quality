@@ -13,7 +13,8 @@ OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) →
 - [x] Transformation with dbt
 - [x] Orchestration with Airflow
 - [x] Dashboard
-- [ ] Tests and CI
+- [x] Data quality tests 
+- [ ] CI
 
 ## Dashboard
 
@@ -29,6 +30,14 @@ OpenAQ API → Python extraction → raw JSON files → BigQuery (raw layer) →
 | `dim_stations` | table | One row per station, with its latest known name and coordinates |
 | `fct_measurements` | table | One row per distinct measurement, deduplicated across extractions |
 | `rpt_latest_measurements` | table | Latest measurement per station and pollutant, with coordinates and an `is_recent` flag, built for the dashboard |
+
+## Data quality tests
+
+`dbt test` runs 22 tests on every layer:
+
+- Generic tests: `not_null` on key columns, `unique` on `station_id` and `measurement_key`, `accepted_values` on `pollutant_code` (the six standard pollutants), and a `relationships` test between `fct_measurements` and `dim_stations`.
+- Singular tests: no fill values (9999 or negative) in the fact table, and exactly one row per station and pollutant in the reporting model.
+- Source freshness: `dbt source freshness` warns after 36 hours without new measurements and fails after 72 hours, so a stopped pipeline is detected.
 
 ## Running with Airflow (local)
 
@@ -46,19 +55,20 @@ The Docker Compose file comes from the official Airflow quick start, adapted for
 - Some stations stopped reporting years ago but the API still returns their last value. Only stations active in the last 24 hours are kept.
 - The free OpenAQ tier allows 60 requests per minute, so calls are spaced by 1.1 seconds.
 - Each run writes a timestamped file, so a load can be replayed without calling the API again.
-- Every record carries an 'extraction_id' (the source file name). A file already present in BigQuery is not loaded twice.
-- API keys and credential paths are read from a '.env' file that is never committed.
+- Every record carries an `extraction_id` (the source file name). A file already present in BigQuery is not loaded twice.
+- API keys and credential paths are read from a `.env` file that is never committed.
 - Stations are identified by `station_id`, never by name. Two distinct stations can share the same name.
 - Consecutive extractions can return the same measurement when a station has not published anything new, so the fact table keeps one row per station, pollutant, unit and timestamp.
 - Only the six standard pollutants are kept in the fact table (CO, NO2, O3, SO2, PM10, PM2.5). Isolated sensors such as temperature or humidity are excluded.
 - Fill values are excluded. Sensors can report 9999 when they have no valid measurement. Values of 9999 or more and negative values are filtered out of the fact table, and a dbt test fails if one gets through.
 - dbt runs in its own virtual environment inside the Airflow image, because installing dbt next to Airflow can cause dependency conflicts.
 - Secrets are injected at runtime, through an untracked `.env` file and mounted volumes, and never written in the repository.
+- The extraction is resilient to network failures: every request has a timeout, failed requests are retried with an increasing pause, and the script fails if no record was collected, so Airflow retries the task instead of loading an empty file.
 
 ## Known limitations
 
 - Freshness is checked per station, not per sensor. A station passes the 24-hour filter as long as one of its sensors has reported recently. In a snapshot of the latest values taken on 2026-10-29, 20 of 550 (about 4 %) came from 4 stations: two had no recent value for any pollutant, two still had a recent PM2.5 value. These values are flagged `is_recent = false` and excluded from the dashboard.
-- "Recent" is relative to the newest measurement in the table, not to the current time. If the pipeline stops running, older data is not flagged as outdated, so the dashboard displays the date of its latest measurement.cently, so other sensors of the same station can be stale. In the first two extractions, about 0.2 % of measurements were affected (2 out of 1074, from two different stations).
+- "Recent" is relative to the newest measurement in the table, not to the current time, so the dashboard displays the date of its latest measurement. A source freshness check now warns when no new data arrives for 36 hours, but the dashboard itself does not show an alert.
 - Only the latest value of each sensor is collected. The pipeline stores a snapshot at each run, not the full measurement history.
 - Fill values are filtered with a fixed threshold. Several sensors regularly report 9999 when they have no valid measurement. Values of 9999 or more and negative values are dropped, but the pipeline does not yet apply plausible upper bounds per pollutant.
 - The pipeline runs locally. Scheduled runs only happen while Docker is running and the machine is awake. A run missed while Airflow is stopped is skipped.
@@ -79,7 +89,7 @@ Fill in '.env' with your own OpenAQ API key and the path to your GCP service acc
 
 dbt reads its connection settings from `~/.dbt/profiles.yml`, outside the repository. Create it with `dbt init` or copy the structure from the dbt documentation for BigQuery. Then run `dbt build` from the `dbt_seoul_air` folder.
 
-You also need a GCP project with a BigQuery dataset named 'seoul_air_quality_raw'.
+You also need a GCP project with a BigQuery dataset named `seoul_air_quality_raw`.
 
 ## Usage
 
