@@ -13,7 +13,7 @@ with DAG(
     catchup=False,
     max_active_runs=1,
     default_args={
-        "retries": 1,
+        "retries": 3,
         "retry_delay": datetime.timedelta(minutes=5),
     },
     tags=["seoul-air-quality"],
@@ -21,6 +21,7 @@ with DAG(
     extract = BashOperator(
         task_id="extract_openaq",
         bash_command="cd /opt/airflow/data && python /opt/airflow/project/seoul-air-quality.py",
+        execution_timeout=datetime.timedelta(minutes=30)
     )
 
     load = BashOperator(

@@ -15,10 +15,27 @@ load_dotenv()
 API_KEY = os.getenv("OPENAQ_API_KEY")
 SEOUL_LAT, SEOUL_LON = 37.5665, 126.9780
 
-response = requests.get(
+def get_with_retry(url, params=None, max_attempts=3):
+    """Send a GET request and retry with a growing pause if it fails."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = requests.get(
+                url,
+                params=params,
+                headers={"X-API-Key": API_KEY},
+                timeout=30,
+            )
+            response.raise_for_status()
+            return response
+        except requests.exceptions.RequestException as e:
+            print(f"Attempt {attempt}/{max_attempts} failed: {e}")
+            if attempt == max_attempts:
+                raise
+            time.sleep(10 * attempt)
+
+response = get_with_retry(
     "https://api.openaq.org/v3/locations",
     params={"coordinates": f"{SEOUL_LAT},{SEOUL_LON}", "radius": 25000, "limit": 1000},
-    headers={"X-API-Key": API_KEY}
 )
 
 locations = response.json()
@@ -48,14 +65,13 @@ def get_station_measurements(station):
     sensor_lookup = {sensor["id"]: sensor["parameter"] for sensor in station["sensors"]}
 
     try:
-        latest_response = requests.get(
+        latest_response = get_with_retry(
             f"https://api.openaq.org/v3/locations/{station['id']}/latest",
-            headers={"X-API-Key": API_KEY}
         )
         latest_response.raise_for_status()
         latest_data = latest_response.json()
     except requests.exceptions.RequestException as e:
-        print(f"Erreur pour la station {station['name']} : {e}")
+        print(f"Error for the station {station['name']} : {e}")
         return []
     
     station_records = []
@@ -82,6 +98,8 @@ for station in active_stations:
     print(f"{station['name']} treated")
 
 print(len(records))
+if not records:
+    raise RuntimeError("No records collected, stopping before saving an empty file")
 
 
 # Saving the records to a JSON file with a timestamped filename
